@@ -6,7 +6,7 @@ example query:
 http GET http://127.0.0.1:13400/api/vuln/jquery
 ```
 
-output (as when i'm writing this):
+output (as of when i'm writing this):
 
 ```json
 [
@@ -40,3 +40,7 @@ output (as when i'm writing this):
   }
 ]
 ```
+
+## GitHub PAT API Key
+
+You will need to put your PAT key in the `.env` file. For this project, you only need the `read:packages` permissions to be turned on.
