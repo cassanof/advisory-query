@@ -93,7 +93,7 @@ func (q SecurityVulnQueryNPM) PrettyPrint() {
 }
 
 func (q SecurityVulnQueryNPM) GetVulnerabilities() []Vulnerability {
-	var vulnerabilities []Vulnerability
+	vulnerabilities := []Vulnerability{}
 	for _, node := range q.GetPackages() {
 		// skip if withdrawn, we don't want to count it
 		if !node.Advisory.WithdrawnAt.IsZero() {
