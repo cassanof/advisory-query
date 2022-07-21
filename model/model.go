@@ -1,7 +1,6 @@
 package model
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -22,10 +21,26 @@ type QueryNode struct {
 
 type QueryNodes = []QueryNode
 
+type SecurityVulnQuery interface {
+	GetVulnerabilities() []Vulnerability
+}
+
 type SecurityVulnQueryNPM struct {
 	SecurityVulnerabilities struct {
 		QueryNodes `graphql:"nodes"`
 	} `graphql:"securityVulnerabilities(first: 100, package: $packageName, ecosystem: NPM)"`
+}
+
+type SecurityVulnQueryPIP struct {
+	SecurityVulnerabilities struct {
+		QueryNodes `graphql:"nodes"`
+	} `graphql:"securityVulnerabilities(first: 100, package: $packageName, ecosystem: PIP)"`
+}
+
+type SecurityVulnQueryRUST struct {
+	SecurityVulnerabilities struct {
+		QueryNodes `graphql:"nodes"`
+	} `graphql:"securityVulnerabilities(first: 100, package: $packageName, ecosystem: RUST)"`
 }
 
 type Vulnerability struct {
@@ -67,34 +82,9 @@ func (n QueryNode) getBadness() float32 {
 	return (float32)(score)
 }
 
-func (q SecurityVulnQueryNPM) GetPackages() QueryNodes {
-	return q.SecurityVulnerabilities.QueryNodes
-}
-
-func (q SecurityVulnQueryNPM) PrettyPrint() {
-	for i, node := range q.GetPackages() {
-		fmt.Printf("--------- %d ---------\n", i)
-		fmt.Println(string(node.VulnerableVersionRange))
-		fmt.Println(string(node.Severity))
-		if node.Advisory.WithdrawnAt.IsZero() {
-			fmt.Println("Withdrawn: its nil")
-		} else {
-			fmt.Println("Withdrawn:", node.Advisory.WithdrawnAt)
-		}
-
-		cvssString := string(node.Advisory.CVSS.VectorString)
-		if cvssString == "" {
-			fmt.Println("CVSS: its nil")
-		} else {
-			fmt.Println("CVSS: ", cvssString)
-		}
-		fmt.Println("----------------------")
-	}
-}
-
-func (q SecurityVulnQueryNPM) GetVulnerabilities() []Vulnerability {
+func getVulnsFromNodes(nodes *QueryNodes) []Vulnerability {
 	vulnerabilities := []Vulnerability{}
-	for _, node := range q.GetPackages() {
+	for _, node := range *nodes {
 		// skip if withdrawn, we don't want to count it
 		if !node.Advisory.WithdrawnAt.IsZero() {
 			continue
@@ -109,4 +99,16 @@ func (q SecurityVulnQueryNPM) GetVulnerabilities() []Vulnerability {
 		})
 	}
 	return vulnerabilities
+}
+
+func (q SecurityVulnQueryNPM) GetVulnerabilities() []Vulnerability {
+	return getVulnsFromNodes(&q.SecurityVulnerabilities.QueryNodes)
+}
+
+func (q SecurityVulnQueryPIP) GetVulnerabilities() []Vulnerability {
+	return getVulnsFromNodes(&q.SecurityVulnerabilities.QueryNodes)
+}
+
+func (q SecurityVulnQueryRUST) GetVulnerabilities() []Vulnerability {
+	return getVulnsFromNodes(&q.SecurityVulnerabilities.QueryNodes)
 }

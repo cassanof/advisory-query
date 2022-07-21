@@ -23,13 +23,30 @@ func InitGQLClient() {
 
 func GetPackageVulns(c *fiber.Ctx) error {
 	packageName := c.Params("packageName")
+	ecosystem := c.Params("ecosystem")
 
 	variables := map[string]interface{}{
 		"packageName": graphql.String(packageName),
 	}
 
-	qry := model.SecurityVulnQueryNPM{}
-	err := gqlClient.Query(context.Background(), &qry, variables)
+	var err error
+	var qry model.SecurityVulnQuery
+	switch ecosystem {
+	case "npm":
+		query := model.SecurityVulnQueryNPM{}
+		err = gqlClient.Query(context.Background(), &query, variables)
+		qry = query
+	case "rust":
+		query := model.SecurityVulnQueryRUST{}
+		err = gqlClient.Query(context.Background(), &query, variables)
+		qry = query
+	case "pip":
+		query := model.SecurityVulnQueryPIP{}
+		err = gqlClient.Query(context.Background(), &query, variables)
+		qry = query
+	default:
+		return c.Status(404).JSON(fiber.Map{"status": "error", "message": "The given ecosystem is not supported"})
+	}
 
 	if err != nil {
 		return c.Status(404).JSON(fiber.Map{"status": "error", "message": "Bad request"})

@@ -1,9 +1,21 @@
 # A very simple server for querying GitHub's advisory for a malicious NPM package
 
-example query:
+## GitHub PAT API Key
+
+You will need to put your PAT key in the `.env` file. For this project, you only need the `read:packages` permissions to be turned on.
+
+#### Supported ecosystems
+
+- `rust`
+- `npm`
+- `pip`
+
+#### Example
+
+example query (for querying the `jquery` package from the `npm` ecosystem):
 
 ```
-http GET http://127.0.0.1:13400/api/vuln/jquery
+http GET http://127.0.0.1:13400/api/vuln/npm/jquery
 ```
 
 output (as of when i'm writing this):
@@ -40,7 +52,3 @@ output (as of when i'm writing this):
   }
 ]
 ```
-
-## GitHub PAT API Key
-
-You will need to put your PAT key in the `.env` file. For this project, you only need the `read:packages` permissions to be turned on.
