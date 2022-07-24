@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/cassanof/advisory-query/middleware"
+	"github.com/cassanof/advisory-query/model"
 	"github.com/cassanof/advisory-query/router"
 	"github.com/gofiber/fiber/v2"
 )
@@ -9,6 +10,9 @@ import (
 func main() {
 	// Start a new fiber app
 	app := fiber.New()
+
+	// Init cache
+	go model.StartCache()
 
 	// Setup routes
 	router.Setup(app)

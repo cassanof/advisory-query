@@ -12,7 +12,7 @@ import (
 
 var gqlClient *graphql.Client
 
-func InitGQLClient() {
+func InitHandler() {
 	src := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: config.Config("GITHUB_API_KEY")},
 	)
@@ -25,9 +25,14 @@ func GetPackageVulns(c *fiber.Ctx) error {
 	packageName := c.Params("packageName")
 	extraAfterSlash := c.Params("*")
 	ecosystem := c.Params("ecosystem")
-
 	if extraAfterSlash != "" {
 		packageName = packageName + "/" + extraAfterSlash
+	}
+	fullpath := ecosystem + "/" + packageName
+
+	cachedVulns := model.GetCachedVuln(fullpath)
+	if cachedVulns != nil {
+		return c.JSON(cachedVulns)
 	}
 
 	variables := map[string]interface{}{
@@ -58,6 +63,7 @@ func GetPackageVulns(c *fiber.Ctx) error {
 	}
 
 	vulns := qry.GetVulnerabilities()
+	model.CacheVuln(fullpath, vulns)
 
 	// If no note is present return an error
 	return c.JSON(vulns)
