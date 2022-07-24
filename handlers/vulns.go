@@ -23,7 +23,12 @@ func InitGQLClient() {
 
 func GetPackageVulns(c *fiber.Ctx) error {
 	packageName := c.Params("packageName")
+	extraAfterSlash := c.Params("*")
 	ecosystem := c.Params("ecosystem")
+
+	if extraAfterSlash != "" {
+		packageName = packageName + "/" + extraAfterSlash
+	}
 
 	variables := map[string]interface{}{
 		"packageName": graphql.String(packageName),

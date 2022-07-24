@@ -10,5 +10,5 @@ func SetupVuln(router *fiber.Router) {
 	handlers.InitGQLClient()
 	vuln := (*router).Group("/vuln")
 	// endpoint for getting vulns for a package, e.g. api/vuln/jquery
-	vuln.Get("/:ecosystem/:packageName", handlers.GetPackageVulns)
+	vuln.Get("/:ecosystem/:packageName/*", handlers.GetPackageVulns)
 }
