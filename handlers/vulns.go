@@ -33,6 +33,7 @@ func GetPackageVulns(c *fiber.Ctx) error {
 
 	cachedVulns := model.GetCachedVuln(fullpath)
 	if cachedVulns != nil {
+		log.Println("Cache hit for " + fullpath)
 		return c.JSON(cachedVulns)
 	}
 
