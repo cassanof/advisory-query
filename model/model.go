@@ -22,25 +22,42 @@ type QueryNode struct {
 type QueryNodes = []QueryNode
 
 type SecurityVulnQuery interface {
-	GetVulnerabilities() []Vulnerability
+	GetVulnerabilities() *SecurityVulnerabilities
+}
+
+type PageInfo struct {
+	StartCursor graphql.String
+	HasNextPage graphql.Boolean
+	EndCursor   graphql.String
+}
+
+type SecurityVulnerabilities struct {
+	PageInfo   `graphql:"pageInfo"`
+	QueryNodes `graphql:"nodes"`
 }
 
 type SecurityVulnQueryNPM struct {
-	SecurityVulnerabilities struct {
-		QueryNodes `graphql:"nodes"`
-	} `graphql:"securityVulnerabilities(first: 100, package: $packageName, ecosystem: NPM)"`
+	SecurityVulnerabilities `graphql:"securityVulnerabilities(first: 1, package: $packageName, ecosystem: NPM)"`
 }
 
 type SecurityVulnQueryPIP struct {
-	SecurityVulnerabilities struct {
-		QueryNodes `graphql:"nodes"`
-	} `graphql:"securityVulnerabilities(first: 100, package: $packageName, ecosystem: PIP)"`
+	SecurityVulnerabilities `graphql:"securityVulnerabilities(first: 1, package: $packageName, ecosystem: PIP)"`
 }
 
 type SecurityVulnQueryRUST struct {
-	SecurityVulnerabilities struct {
-		QueryNodes `graphql:"nodes"`
-	} `graphql:"securityVulnerabilities(first: 100, package: $packageName, ecosystem: RUST)"`
+	SecurityVulnerabilities `graphql:"securityVulnerabilities(first: 1, package: $packageName, ecosystem: RUST)"`
+}
+
+type SecurityVulnQueryNPMRest struct {
+	SecurityVulnerabilities `graphql:"securityVulnerabilities(first: 1, after: $cursor, package: $packageName, ecosystem: NPM)"`
+}
+
+type SecurityVulnQueryPIPRest struct {
+	SecurityVulnerabilities `graphql:"securityVulnerabilities(first: 1, after: $cursor, package: $packageName, ecosystem: PIP)"`
+}
+
+type SecurityVulnQueryRUSTRest struct {
+	SecurityVulnerabilities `graphql:"securityVulnerabilities(first: 1, after: $cursor, package: $packageName, ecosystem: RUST)"`
 }
 
 type Vulnerability struct {
@@ -101,14 +118,30 @@ func getVulnsFromNodes(nodes *QueryNodes) []Vulnerability {
 	return vulnerabilities
 }
 
-func (q SecurityVulnQueryNPM) GetVulnerabilities() []Vulnerability {
-	return getVulnsFromNodes(&q.SecurityVulnerabilities.QueryNodes)
+func (vulns *SecurityVulnerabilities) Unwrap() []Vulnerability {
+	return getVulnsFromNodes(&vulns.QueryNodes)
 }
 
-func (q SecurityVulnQueryPIP) GetVulnerabilities() []Vulnerability {
-	return getVulnsFromNodes(&q.SecurityVulnerabilities.QueryNodes)
+func (q SecurityVulnQueryNPM) GetVulnerabilities() *SecurityVulnerabilities {
+	return &q.SecurityVulnerabilities
 }
 
-func (q SecurityVulnQueryRUST) GetVulnerabilities() []Vulnerability {
-	return getVulnsFromNodes(&q.SecurityVulnerabilities.QueryNodes)
+func (q SecurityVulnQueryPIP) GetVulnerabilities() *SecurityVulnerabilities {
+	return &q.SecurityVulnerabilities
+}
+
+func (q SecurityVulnQueryRUST) GetVulnerabilities() *SecurityVulnerabilities {
+	return &q.SecurityVulnerabilities
+}
+
+func (q SecurityVulnQueryNPMRest) GetVulnerabilities() *SecurityVulnerabilities {
+	return &q.SecurityVulnerabilities
+}
+
+func (q SecurityVulnQueryPIPRest) GetVulnerabilities() *SecurityVulnerabilities {
+	return &q.SecurityVulnerabilities
+}
+
+func (q SecurityVulnQueryRUSTRest) GetVulnerabilities() *SecurityVulnerabilities {
+	return &q.SecurityVulnerabilities
 }

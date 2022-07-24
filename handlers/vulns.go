@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"log"
 
 	"github.com/cassanof/advisory-query/config"
 	"github.com/cassanof/advisory-query/model"
@@ -39,32 +40,65 @@ func GetPackageVulns(c *fiber.Ctx) error {
 		"packageName": graphql.String(packageName),
 	}
 
-	var err error
-	var qry model.SecurityVulnQuery
-	switch ecosystem {
-	case "npm":
-		query := model.SecurityVulnQueryNPM{}
-		err = gqlClient.Query(context.Background(), &query, variables)
-		qry = query
-	case "rust":
-		query := model.SecurityVulnQueryRUST{}
-		err = gqlClient.Query(context.Background(), &query, variables)
-		qry = query
-	case "pip":
-		query := model.SecurityVulnQueryPIP{}
-		err = gqlClient.Query(context.Background(), &query, variables)
-		qry = query
-	default:
-		return c.Status(404).JSON(fiber.Map{"status": "error", "message": "The given ecosystem is not supported"})
+	vulnList := make([]model.Vulnerability, 0)
+	firstRun := true
+	for {
+		var err error
+		var qry model.SecurityVulnQuery
+		switch ecosystem {
+		case "npm":
+			if firstRun {
+				query := model.SecurityVulnQueryNPM{}
+				err = gqlClient.Query(context.Background(), &query, variables)
+				qry = query
+			} else {
+				query := model.SecurityVulnQueryNPMRest{}
+				err = gqlClient.Query(context.Background(), &query, variables)
+				qry = query
+			}
+		case "rust":
+			if firstRun {
+				query := model.SecurityVulnQueryRUST{}
+				err = gqlClient.Query(context.Background(), &query, variables)
+				qry = query
+			} else {
+				query := model.SecurityVulnQueryRUSTRest{}
+				err = gqlClient.Query(context.Background(), &query, variables)
+				qry = query
+			}
+		case "pip":
+			if firstRun {
+				query := model.SecurityVulnQueryPIP{}
+				err = gqlClient.Query(context.Background(), &query, variables)
+				qry = query
+			} else {
+				query := model.SecurityVulnQueryPIPRest{}
+				err = gqlClient.Query(context.Background(), &query, variables)
+				qry = query
+			}
+		default:
+			return c.Status(404).JSON(fiber.Map{"status": "error", "message": "The given ecosystem is not supported"})
+		}
+
+		if err != nil {
+			log.Println("Got error: ", err)
+			return c.Status(404).JSON(fiber.Map{"status": "error", "message": "Bad request"})
+		}
+
+		vulnQuery := qry.GetVulnerabilities()
+
+		vulnList = append(vulnList, vulnQuery.Unwrap()...)
+
+		variables["cursor"] = graphql.String(vulnQuery.PageInfo.EndCursor)
+		firstRun = false
+
+		if !vulnQuery.HasNextPage {
+			break
+		}
 	}
 
-	if err != nil {
-		return c.Status(404).JSON(fiber.Map{"status": "error", "message": "Bad request"})
-	}
-
-	vulns := qry.GetVulnerabilities()
-	model.CacheVuln(fullpath, vulns)
+	model.CacheVuln(fullpath, vulnList)
 
 	// If no note is present return an error
-	return c.JSON(vulns)
+	return c.JSON(vulnList)
 }

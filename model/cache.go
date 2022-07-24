@@ -1,6 +1,7 @@
 package model
 
 import (
+	"log"
 	"sync"
 	"time"
 )
@@ -25,6 +26,7 @@ func StartCache() {
 func cleanup() {
 	// wait for 12 hours before cleaning up the cache
 	time.Sleep(12 * time.Hour)
+	log.Println("Cleaning up cache... Cached vulnerabilities:", len(vulnCache.cache))
 	cacheMutex.Lock()
 	vulnCache = VulnCache{
 		cache: make(map[string][]Vulnerability),
