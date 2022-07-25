@@ -66,6 +66,7 @@ func GetPackageVulns(c *fiber.Ctx) error {
 
 	vulnList := make([]model.Vulnerability, 0)
 	firstRun := true
+	rotatedAfterRateLimit := false
 	for {
 		var err error
 		var qry model.SecurityVulnQuery
@@ -108,12 +109,14 @@ func GetPackageVulns(c *fiber.Ctx) error {
 			log.Println("Got error: ", err)
 
 			// if the error is a rate limit error, rotate the API key and try again
-			if strings.Contains(err.Error(), "API rate limit exceeded") {
+			if strings.Contains(err.Error(), "API rate limit exceeded") && !rotatedAfterRateLimit {
 				rotateApiKey()
+				rotatedAfterRateLimit = true
 				continue
 			}
 			return c.Status(500).JSON(fiber.Map{"status": "error", "message": "Bad request"})
 		}
+		rotatedAfterRateLimit = false // we got a successful response, so we can reset the retry flag
 
 		vulnQuery := qry.GetVulnerabilities()
 
