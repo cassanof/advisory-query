@@ -54,6 +54,8 @@ func GetPackageVulns(c *fiber.Ctx) error {
 	}
 	fullpath := ecosystem + "/" + packageName
 
+	log.Println("Getting vulnerabilities for ", fullpath)
+
 	cachedVulns := model.GetCachedVuln(fullpath)
 	if cachedVulns != nil {
 		log.Println("Cache hit for " + fullpath)
