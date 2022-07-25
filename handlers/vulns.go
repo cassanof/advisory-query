@@ -112,7 +112,7 @@ func GetPackageVulns(c *fiber.Ctx) error {
 				rotateApiKey()
 				continue
 			}
-			return c.Status(404).JSON(fiber.Map{"status": "error", "message": "Bad request"})
+			return c.Status(500).JSON(fiber.Map{"status": "error", "message": "Bad request"})
 		}
 
 		vulnQuery := qry.GetVulnerabilities()
