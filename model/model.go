@@ -49,15 +49,15 @@ type SecurityVulnQueryRUST struct {
 }
 
 type SecurityVulnQueryNPMRest struct {
-	SecurityVulnerabilities `graphql:"securityVulnerabilities(first: 1, after: $cursor, package: $packageName, ecosystem: NPM)"`
+	SecurityVulnerabilities `graphql:"securityVulnerabilities(first: 10, after: $cursor, package: $packageName, ecosystem: NPM)"`
 }
 
 type SecurityVulnQueryPIPRest struct {
-	SecurityVulnerabilities `graphql:"securityVulnerabilities(first: 1, after: $cursor, package: $packageName, ecosystem: PIP)"`
+	SecurityVulnerabilities `graphql:"securityVulnerabilities(first: 10, after: $cursor, package: $packageName, ecosystem: PIP)"`
 }
 
 type SecurityVulnQueryRUSTRest struct {
-	SecurityVulnerabilities `graphql:"securityVulnerabilities(first: 1, after: $cursor, package: $packageName, ecosystem: RUST)"`
+	SecurityVulnerabilities `graphql:"securityVulnerabilities(first: 10, after: $cursor, package: $packageName, ecosystem: RUST)"`
 }
 
 type Vulnerability struct {

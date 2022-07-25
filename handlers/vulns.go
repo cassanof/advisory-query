@@ -3,6 +3,8 @@ package handlers
 import (
 	"context"
 	"log"
+	"strings"
+	"sync"
 
 	"github.com/cassanof/advisory-query/config"
 	"github.com/cassanof/advisory-query/model"
@@ -12,14 +14,35 @@ import (
 )
 
 var gqlClient *graphql.Client
+var apiKeys []string
+var currentApiKeyIndex int
+var apiKeyMutex sync.Mutex
 
-func InitHandler() {
+func rotateApiKey() {
+	log.Println("Rotating API key")
+	apiKeyMutex.Lock()
+	currentApiKeyIndex = (currentApiKeyIndex + 1) % len(apiKeys)
+	initGQLClient()
+	apiKeyMutex.Unlock()
+}
+
+func initGQLClient() {
 	src := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: config.Config("GITHUB_API_KEY")},
+		&oauth2.Token{AccessToken: apiKeys[currentApiKeyIndex]},
 	)
 	httpClient := oauth2.NewClient(context.Background(), src)
 
 	gqlClient = graphql.NewClient("https://api.github.com/graphql", httpClient)
+}
+
+func InitHandler() {
+	configStr := config.Config("GITHUB_API_KEYS")
+	apiKeys = strings.Split(configStr, ", ")
+	if len(apiKeys) == 0 {
+		log.Fatal("No GitHub API keys found")
+	}
+	currentApiKeyIndex = 0
+	initGQLClient()
 }
 
 func GetPackageVulns(c *fiber.Ctx) error {
@@ -83,6 +106,12 @@ func GetPackageVulns(c *fiber.Ctx) error {
 
 		if err != nil {
 			log.Println("Got error: ", err)
+
+			// if the error is a rate limit error, rotate the API key and try again
+			if strings.Contains(err.Error(), "API rate limit exceeded") {
+				rotateApiKey()
+				continue
+			}
 			return c.Status(404).JSON(fiber.Map{"status": "error", "message": "Bad request"})
 		}
 

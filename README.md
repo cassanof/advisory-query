@@ -2,7 +2,10 @@
 
 ## GitHub PAT API Key
 
-You will need to put your PAT key in the `.env` file. For this project, you only need the `read:packages` permissions to be turned on.
+You will need to put your PAT key in the `.env` file. For this project, you only need the `read:packages` permissions to be turned on.  
+It is possible to put more than one api key, such that if you get rate limited, the keys will rotate.
+To do that, use this syntax (including the space in between):
+`GITHUB_API_KEYS="<key1>, <key2>, <key3>"`
 
 #### Supported ecosystems
 
