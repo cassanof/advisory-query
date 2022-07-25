@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"encoding/json"
+	"sync"
 
 	"github.com/cassanof/advisory-query/model"
 	_ "github.com/mattn/go-sqlite3"
@@ -10,6 +11,7 @@ import (
 
 type Database struct {
 	db *sql.DB
+	mu sync.Mutex
 }
 
 var DB *Database
@@ -26,7 +28,7 @@ func InitDB() {
 	if err != nil {
 		panic(err)
 	}
-	DB = &Database{db}
+	DB = &Database{db, sync.Mutex{}}
 
 	_, err = DB.db.Exec(create)
 	if err != nil {
@@ -43,7 +45,9 @@ func (db *Database) Insert(fullpath string, vulns []model.Vulnerability) error {
 	if err != nil {
 		return err
 	}
+	DB.mu.Lock()
 	_, err = DB.db.Exec("INSERT INTO cache (fullpath, vulns) VALUES (?, ?)", fullpath, string(vulnsJson))
+	DB.mu.Unlock()
 	if err != nil {
 		return err
 	}
@@ -53,7 +57,9 @@ func (db *Database) Insert(fullpath string, vulns []model.Vulnerability) error {
 func (db *Database) Get(fullpath string) []model.Vulnerability {
 	var vulns []model.Vulnerability
 	var vulnsJson string
+	DB.mu.Lock()
 	err := DB.db.QueryRow("SELECT vulns FROM cache WHERE fullpath = ?", fullpath).Scan(&vulnsJson)
+	DB.mu.Unlock()
 	if err != nil {
 		return nil
 	}
