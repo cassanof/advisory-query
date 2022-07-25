@@ -7,10 +7,18 @@ import (
 	"sync"
 
 	"github.com/cassanof/advisory-query/config"
+	"github.com/cassanof/advisory-query/database"
 	"github.com/cassanof/advisory-query/model"
 	"github.com/gofiber/fiber/v2"
 	"github.com/hasura/go-graphql-client"
 	"golang.org/x/oauth2"
+)
+
+type cacheType = int
+
+const (
+	PERSISTANT_CACHE cacheType = iota
+	TEMPORARY_CACHE
 )
 
 var gqlClient *graphql.Client
@@ -45,7 +53,15 @@ func InitHandler() {
 	initGQLClient()
 }
 
-func GetPackageVulns(c *fiber.Ctx) error {
+func GetPackageVulnsPersistant(c *fiber.Ctx) error {
+	return getPackageVulns(c, PERSISTANT_CACHE)
+}
+
+func GetPackageVulnsTemporary(c *fiber.Ctx) error {
+	return getPackageVulns(c, TEMPORARY_CACHE)
+}
+
+func getPackageVulns(c *fiber.Ctx, cacheType cacheType) error {
 	packageName := c.Params("packageName")
 	extraAfterSlash := c.Params("*")
 	ecosystem := c.Params("ecosystem")
@@ -56,7 +72,14 @@ func GetPackageVulns(c *fiber.Ctx) error {
 
 	log.Println("Getting vulnerabilities for ", fullpath)
 
-	cachedVulns := model.GetCachedVuln(fullpath)
+	var cachedVulns []model.Vulnerability
+	switch cacheType {
+	case PERSISTANT_CACHE:
+		cachedVulns = database.DB.Get(fullpath)
+	case TEMPORARY_CACHE:
+		cachedVulns = model.GetTempCachedVuln(fullpath)
+	}
+
 	if cachedVulns != nil {
 		log.Println("Cache hit for " + fullpath)
 		return c.JSON(cachedVulns)
@@ -132,7 +155,15 @@ func GetPackageVulns(c *fiber.Ctx) error {
 		}
 	}
 
-	model.CacheVuln(fullpath, vulnList)
+	switch cacheType {
+	case PERSISTANT_CACHE:
+		err := database.DB.Insert(fullpath, vulnList)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"status": "error", "message": "DB error"})
+		}
+	case TEMPORARY_CACHE:
+		model.TempCacheVuln(fullpath, vulnList)
+	}
 
 	// If no note is present return an error
 	return c.JSON(vulnList)

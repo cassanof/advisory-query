@@ -14,7 +14,7 @@ var vulnCache VulnCache
 var cacheMutex sync.Mutex
 
 // supposed to be called concurrently with `go`
-func StartCache() {
+func StartTemporaryCache() {
 	vulnCache = VulnCache{
 		cache: make(map[string][]Vulnerability),
 	}
@@ -34,13 +34,13 @@ func cleanup() {
 	cacheMutex.Unlock()
 }
 
-func CacheVuln(key string, vulns []Vulnerability) {
+func TempCacheVuln(key string, vulns []Vulnerability) {
 	cacheMutex.Lock()
 	vulnCache.cache[key] = vulns
 	cacheMutex.Unlock()
 }
 
-func GetCachedVuln(key string) []Vulnerability {
+func GetTempCachedVuln(key string) []Vulnerability {
 	cacheMutex.Lock()
 	defer cacheMutex.Unlock()
 	return vulnCache.cache[key]

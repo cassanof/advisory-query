@@ -1,5 +1,5 @@
 build:
-	go build -o ./out/server main.go
+	CGO_ENABLED=1 go build -o ./out/server main.go
 
 run: build
 	./out/server
