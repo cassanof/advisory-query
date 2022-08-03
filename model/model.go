@@ -1,10 +1,10 @@
 package model
 
 import (
-	"strconv"
-	"strings"
+	"log"
 	"time"
 
+	"github.com/goark/go-cvss/v3/metric"
 	"github.com/hasura/go-graphql-client"
 )
 
@@ -87,16 +87,17 @@ func (n QueryNode) getBadness() float32 {
 			return 0.0
 		}
 	}
-	// otherwise, we use the CVSS score
-	trimmed := strings.SplitN(cvssString, "CVSS:", 2)[1]
-	trimmed = strings.SplitN(trimmed, "/", 2)[0]
-	score, err := strconv.ParseFloat(trimmed, 32)
+	bm, err := metric.NewBase().Decode(cvssString)
+	if err != nil {
+		log.Println(err)
+		return 0.0
+	}
 
 	if err != nil {
 		return 0.0
 	}
 
-	return (float32)(score)
+	return (float32)(bm.Score())
 }
 
 func getVulnsFromNodes(nodes *QueryNodes) []Vulnerability {
